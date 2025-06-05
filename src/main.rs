@@ -1,15 +1,29 @@
 use std::{fs, thread};
 use notify::{Event, RecursiveMode, Result, Watcher, EventKind};
 use std::sync::mpsc;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
-fn set_file_destionation(file_name: Option<&str>, file_extenstion: Option<&str>)
-                         -> Option<&str> {
-    let string_file_name = file_name?;
-    let string_file_extenstion = file_extenstion?;
-    let destionation_path = Path::new("C:\\Users\\xkrys\\Downloads\\");
-    return destionation_path.to_str();
+
+const IMAGE_PATH: &str = "C:\\Users\\xkrys\\Pictures\\";
+const TEXT_PATH: &str = "C:\\Users\\xkrys\\Documents\\";
+const AUDIO_PATH: &str = "C:\\Users\\xkrys\\Music\\";
+const VIDEO_PATH: &str = "C:\\Users\\xkrys\\Videos\\";
+const ARCHIVE_PATH: &str = "C:\\Users\\xkrys\\Archive\\";
+const EXECUTABLE_PATH: &str = "C:\\Users\\xkrys\\Desktop\\";
+const OTHER_PATH: &str = "C:\\Users\\xkrys\\Downloads\\";
+
+enum FileType {
+    Image,
+    Text,
+    Audio,
+    Video,
+    Archive,
+    Executable,
+    Other,
+    Invalid,
 }
+
+
 fn main() -> Result<()> {
     let (tx, rx) = mpsc::channel::<Result<Event>>();
     let mut watcher = notify::recommended_watcher(tx)?;
@@ -36,15 +50,11 @@ fn main() -> Result<()> {
                                 previous_size = current_size;
                                 thread::sleep(Duration::from_secs(1));
                             }
-                            let mut file_name= path.file_name().unwrap().to_str();
-                            let mut file_extenstion= path.extension().unwrap().to_str();
-                            
-                            
-                            if file_name.is_some() && file_extenstion.is_some() {
-                                let file_destionation = set_file_destionation(file_name, file_extenstion);
-                            }
-                            println!("Filename{:?}", path.file_name().unwrap());
-                            fs::rename(path, "test.png")?;
+
+                            print!("File {:?}", path.display());
+                            let file_destionation = set_file_destination(&path);
+                            println!(" -> {:?}", file_destionation);
+                            fs::rename(path, file_destionation)?;
                         }
                     }
                 }
@@ -54,4 +64,46 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn set_file_destination(path: &PathBuf) -> PathBuf {
+    let file_type = match_file_type(path);
+    let file_name = path.file_name().unwrap();
+    
+    let destination_path = match file_type {
+        FileType::Image => Path::new(IMAGE_PATH),
+        FileType::Text => Path::new(TEXT_PATH),
+        FileType::Audio => Path::new(AUDIO_PATH),
+        FileType::Video => Path::new(VIDEO_PATH),
+        FileType::Archive => Path::new(ARCHIVE_PATH),
+        FileType::Executable => Path::new(EXECUTABLE_PATH),
+        FileType::Other => Path::new(OTHER_PATH),
+        FileType::Invalid => panic!("Invalid file type"),
+    };
+    destination_path.join(file_name)
+}
+
+fn match_file_type(path: &Path) -> FileType {
+    let file_extension = path.extension();
+
+    let file_type = match file_extension {
+        Some(ext) => {
+            match ext.to_str() {
+                Some(ext) => {
+                    match ext.to_lowercase().as_str() {
+                        "jpg" | "jpeg" | "png" | "gif" | "bmp" | "webp" => FileType::Image,
+                        "doc" | "docx" | "pdf" | "txt" | "odt" => FileType::Text,
+                        "mp3" | "wav" => FileType::Audio,
+                        "mp4" | "avi" | "mkv" | "mov" => FileType::Video,
+                        "zip" | "rar" | "7z" | "tar" | "gz" => FileType::Archive,
+                        "exe" | "msi" => FileType::Executable,
+                        _ => FileType::Other,
+                    }
+                }
+                None => FileType::Invalid
+            }
+        }
+        None => FileType::Invalid
+    };
+    file_type
 }
