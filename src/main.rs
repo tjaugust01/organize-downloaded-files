@@ -11,7 +11,7 @@ const VIDEO_PATH: &str = "C:\\Users\\xkrys\\Videos\\";
 const ARCHIVE_PATH: &str = "C:\\Users\\xkrys\\Archive\\";
 const EXECUTABLE_PATH: &str = "C:\\Users\\xkrys\\Desktop\\";
 const OTHER_PATH: &str = "C:\\Users\\xkrys\\Downloads\\";
-
+const DOWNLOAD_PATH: &str = "C:\\Users\\xkrys\\Downloads\\";
 enum FileType {
     Image,
     Text,
@@ -27,7 +27,7 @@ enum FileType {
 fn main() -> Result<()> {
     let (tx, rx) = mpsc::channel::<Result<Event>>();
     let mut watcher = notify::recommended_watcher(tx)?;
-    let path=Path::new(".\\..\\..\\Users\\xkrys\\Downloads\\");
+    let path=Path::new(DOWNLOAD_PATH);
     watcher.watch(path, RecursiveMode::Recursive)?;
     println!("Watching... {:?}",fs::canonicalize(path));
 
